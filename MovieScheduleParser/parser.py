@@ -131,7 +131,7 @@ class CJScheduleParser(MovieScheduleParser):
         date_split = date_text.split(".")
 
         # If date is different from the day of argument, return None.
-        if "".join(date_split) != url[-8:]:
+        if url.find('startDate') != -1 and "".join(date_split) != url[-8:]:
             return None
 
         schedule_date = datetime.datetime(int(date_split[0]), int(date_split[1]), int(date_split[2]))
