@@ -16,5 +16,5 @@ class TestMovieParser(unittest.TestCase):
         print(end_date)
         print(schedules)
 
-        if os.path.exists('ghostdriver.log'):
-            os.remove('ghostdriver.log')
+        if os.path.exists('/tmp/ghostdriver.log'):
+            os.remove('/tmp/ghostdriver.log')

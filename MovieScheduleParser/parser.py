@@ -258,7 +258,7 @@ class TCastScheduleParser(MovieScheduleParser):
     def get_channel_schedule(self, url):
         """Get t.cast channel schedule until no schedule exists. And return last update date. """
 
-        driver = webdriver.PhantomJS('./phantomjs')
+        driver = webdriver.PhantomJS('./phantomjs', service_log_path='/tmp/ghostdriver.log')
         driver.get(url)
 
         # Get current week of start_date
