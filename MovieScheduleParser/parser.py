@@ -4,6 +4,7 @@
     2017~2018 Yungon Park
 """
 import datetime
+import os
 
 import requests
 from bs4 import BeautifulSoup
@@ -12,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.firefox.options import Options
 
 
 class MovieScheduleParser(object):
@@ -258,7 +260,11 @@ class TCastScheduleParser(MovieScheduleParser):
     def get_channel_schedule(self, url):
         """Get t.cast channel schedule until no schedule exists. And return last update date. """
 
-        driver = webdriver.PhantomJS('./phantomjs', service_log_path='/tmp/ghostdriver.log')
+        options = Options()
+        options.set_headless(headless=True)
+        driver = webdriver.Firefox(options=options,
+                                   log_path='/tmp/geckodriver.log',
+                                   executable_path='./geckodriver')
         driver.get(url)
 
         # Get current week of start_date
@@ -285,5 +291,8 @@ class TCastScheduleParser(MovieScheduleParser):
                 temp_schedules = self.parse_daily_schedule(schedule_table, end_date)
 
         driver.close()
+
+        if os.path.exists('/tmp/geckodriver.log'):
+            os.remove('/tmp/geckodriver.log')
 
         return end_date, schedules

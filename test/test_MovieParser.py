@@ -1,5 +1,6 @@
 import os
 import unittest
+import datetime
 from MovieScheduleParser import parser
 
 
@@ -13,7 +14,11 @@ class TestMovieParser(unittest.TestCase):
 
     def test_parse_cj_channel(self):
         cj_parser = parser.CJScheduleParser()
-        schedules = cj_parser.get_channel_schedule('http://ocn.tving.com/ocn/schedule?startDate=20180425')
+        today = datetime.date.today()
+        url = 'http://ocn.tving.com/ocn/schedule?startDate={:04d}{:02d}{:02d}'.format(today.year,
+                                                                                      today.month,
+                                                                                      today.day)
+        schedules = cj_parser.get_channel_schedule(url)
 
         self.assertNotEqual(schedules, None)
 
@@ -21,9 +26,6 @@ class TestMovieParser(unittest.TestCase):
         tcast_parser = parser.TCastScheduleParser('Screen')
         end_date, schedules = tcast_parser.get_channel_schedule('http://www.imtcast.com/screen/program/schedule.jsp')
 
-        if os.path.exists('/tmp/ghostdriver.log'):
-            os.remove('/tmp/ghostdriver.log')
-
+        self.assertEqual(os.path.exists('/tmp/geckodriver.log'), False)
         self.assertNotEqual(end_date, None)
         self.assertNotEqual(schedules, None)
-        self.assertEqual(os.path.exists('/tmp/ghostdriver.log'), False)
