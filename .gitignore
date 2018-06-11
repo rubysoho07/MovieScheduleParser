@@ -5,6 +5,3 @@
 build/
 dist/
 MovieScheduleParser.egg-info/
-
-# Related with log file
-ghostdriver.log
