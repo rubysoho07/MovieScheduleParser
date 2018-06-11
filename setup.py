@@ -8,9 +8,9 @@ setup(
     author_email='hahafree12@gmail.com',
     description='Parsing broadcasting schedules from Korean cable broadcasting stations.',
     install_requires=[
-        "requests == 2.18.4",
-        "beautifulsoup4 == 4.6.0",
-        "selenium == 3.8.0",
+        "requests",
+        "beautifulsoup4",
+        "selenium",
     ],
     packages=find_packages()
 )
