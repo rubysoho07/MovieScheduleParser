@@ -12,5 +12,11 @@ setup(
         "beautifulsoup4",
         "selenium",
     ],
-    packages=find_packages()
+    packages=find_packages(
+        exclude=['test']
+    ),
+    include_package_data=True,
+    package_data={
+        '': ['geckodriver']
+    }
 )
