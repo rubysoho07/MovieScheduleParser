@@ -290,7 +290,7 @@ class TCastScheduleParser(MovieScheduleParser):
         options.headless = True
         driver = webdriver.Firefox(options=options,
                                    log_path='/tmp/geckodriver.log',
-                                   executable_path='./geckodriver')
+                                   executable_path=os.path.join(os.path.dirname(__file__), '../geckodriver'))
         driver.get(self.url)
 
         # Get current week of start_date
