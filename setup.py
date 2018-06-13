@@ -16,7 +16,5 @@ setup(
         exclude=['test']
     ),
     include_package_data=True,
-    package_data={
-        '': ['geckodriver']
-    }
+    zip_safe=False
 )
