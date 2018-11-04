@@ -43,16 +43,16 @@ class MovieScheduleParser(object):
             return default
 
     def _get_rating(self, rating):
-        pass
+        raise NotImplementedError
 
     def _parse_schedule_item(self, item, date):
-        pass
+        raise NotImplementedError
 
     def _parse_daily_schedule(self, table, date):
-        pass
+        raise NotImplementedError
 
     def get_channel_schedule(self):
-        pass
+        raise NotImplementedError
 
 
 class CJScheduleParser(MovieScheduleParser):
