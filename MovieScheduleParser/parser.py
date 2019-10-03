@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
     Movie Schedule Parser.
-    2017~2018 Yungon Park
+    2017~2019 Yungon Park
 """
 import datetime
 import os
@@ -13,7 +13,6 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.firefox.options import Options
 
 
 class MovieScheduleParser(object):
@@ -286,11 +285,14 @@ class TCastScheduleParser(MovieScheduleParser):
     def get_channel_schedule(self):
         """Get t.cast channel schedule until no schedule exists. And return last update date. """
 
-        options = Options()
-        options.headless = True
-        driver = webdriver.Firefox(options=options,
-                                   log_path='/tmp/geckodriver.log',
-                                   executable_path=os.path.join(os.path.dirname(__file__), 'geckodriver'))
+        options = webdriver.ChromeOptions()
+        options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(os.path.join(os.path.dirname(__file__), 'chromedriver'), options=options,
+                                  service_log_path='/tmp/chromium.log')
         driver.get(self.url)
 
         # Get current week of start_date
@@ -316,7 +318,7 @@ class TCastScheduleParser(MovieScheduleParser):
 
         driver.close()
 
-        if os.path.exists('/tmp/geckodriver.log'):
-            os.remove('/tmp/geckodriver.log')
+        if os.path.exists('/tmp/chromium.log'):
+            os.remove('/tmp/chromium.log')
 
         return end_date, schedules

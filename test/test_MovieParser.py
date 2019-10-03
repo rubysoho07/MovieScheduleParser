@@ -65,7 +65,7 @@ class TestTCastMovieParser(unittest.TestCase):
         tcast_parser = parser.TCastScheduleParser('http://www.imtcast.com/screen/program/schedule.jsp')
         end_date, schedules = tcast_parser.get_channel_schedule()
 
-        self.assertEqual(os.path.exists('/tmp/geckodriver.log'), False)
+        self.assertEqual(os.path.exists('/tmp/chromium.log'), False)
         self.assertNotEqual(end_date, None)
         self.assertNotEqual(schedules, None)
 
@@ -73,6 +73,6 @@ class TestTCastMovieParser(unittest.TestCase):
         tcast_parser = parser.TCastScheduleParser('http://www.imtcast.com/cinef/program/schedule.jsp')
         end_date, schedules = tcast_parser.get_channel_schedule()
 
-        self.assertEqual(os.path.exists('/tmp/geckodriver.log'), False)
+        self.assertEqual(os.path.exists('/tmp/chromium.log'), False)
         self.assertNotEqual(end_date, None)
         self.assertNotEqual(schedules, None)

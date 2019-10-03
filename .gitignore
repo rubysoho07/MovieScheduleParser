@@ -5,3 +5,10 @@
 build/
 dist/
 MovieScheduleParser.egg-info/
+
+# Related with Chromium
+*/chromedriver
+*/headless-chromium
+
+# Unnecessary log files
+.log
