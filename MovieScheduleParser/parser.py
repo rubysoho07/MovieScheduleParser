@@ -5,6 +5,7 @@
 """
 import datetime
 import os
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -211,16 +212,12 @@ class TCastScheduleParser(MovieScheduleParser):
 
         rating_file_name = rating.split("/")[-1]
 
-        if rating_file_name == "icon_7age.gif":
-            return 7
-        elif rating_file_name == "icon_12age.gif":
-            return 12
-        elif rating_file_name == "icon_15age.gif":
-            return 15
-        elif rating_file_name == "icon_19age.gif":
-            return 19
-        else:
+        age = re.findall(r'icon_(\d{1,2})age.gif', rating_file_name)
+
+        if len(age) == 0:
             return 0
+        else:
+            return age[0]
 
     def _parse_schedule_item(self, item, date):
         """
