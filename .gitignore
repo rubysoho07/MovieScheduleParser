@@ -11,4 +11,4 @@ MovieScheduleParser.egg-info/
 */headless-chromium
 
 # Unnecessary log files
-.log
+*.log
