@@ -156,13 +156,11 @@ class CJScheduleParser(MovieScheduleParser):
         if self.url.find('startDate') != -1 and "".join(date_split) != self.url[-8:]:
             return None
 
-        schedule_date = datetime(int(date_split[0]), int(date_split[1]), int(date_split[2]))
-        # Set to Korea Standard Time (KST)
-        schedule_date = schedule_date.astimezone(timezone(timedelta(hours=9)))
+        schedule_date = datetime(int(date_split[0]), int(date_split[1]), int(date_split[2])) \
+            .astimezone(timezone(timedelta(hours=9)))
         schedule_table = schedule.find('tbody').find_all('tr')
 
         if len(schedule_table) == 0:
-            # If no schedule exists
             return None
 
         return self._parse_daily_schedule(schedule_table, schedule_date)
@@ -196,9 +194,7 @@ class CatchOnScheduleParser(MovieScheduleParser):
 
         schedule['start_time'] = start_time_dt.isoformat()
         schedule['end_time'] = (start_time_dt + timedelta(minutes=duration)).isoformat()
-
         schedule['title'] = item.find('span', class_='title').find('strong').text
-
         schedule['rating'] = self._get_rating(item)
 
         return schedule
