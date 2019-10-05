@@ -3,9 +3,9 @@
     Movie Schedule Parser.
     2017~2019 Yungon Park
 """
-import datetime
 import os
 import re
+from datetime import datetime, timezone, timedelta, date
 
 import requests
 from bs4 import BeautifulSoup
@@ -34,21 +34,42 @@ class MovieScheduleParser(object):
         return BeautifulSoup(data.text, "html.parser")
 
     @staticmethod
-    def _parse_string_to_int(duration, default=0):
+    def _parse_string_to_int(string_to_parse, default=0):
         """Try to parse string to int, or return default value."""
 
         try:
-            return int(duration)
+            return int(string_to_parse)
         except ValueError:
             return default
+
+    @staticmethod
+    def execute_chromium():
+        """ Execute Chromium in headless mode """
+
+        options = webdriver.ChromeOptions()
+        options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(os.path.join(os.path.dirname(__file__), 'chromedriver'), options=options,
+                                  service_log_path='/tmp/chromium.log')
+
+        return driver
+
+    @staticmethod
+    def clean_chromium_log():
+
+        if os.path.exists('/tmp/chromium.log'):
+            os.remove('/tmp/chromium.log')
 
     def _get_rating(self, rating):
         raise NotImplementedError
 
-    def _parse_schedule_item(self, item, date):
+    def _parse_schedule_item(self, item, schedule_date):
         raise NotImplementedError
 
-    def _parse_daily_schedule(self, table, date):
+    def _parse_daily_schedule(self, table, schedule_date):
         raise NotImplementedError
 
     def get_channel_schedule(self):
@@ -61,18 +82,14 @@ class CJScheduleParser(MovieScheduleParser):
     def _get_rating(self, rating):
         """Return rating information from string."""
 
-        if rating == "age19":
-            return 19
-        elif rating == "age15":
-            return 15
-        elif rating == "age12":
-            return 12
-        elif rating == "age7":
-            return 7
-        else:
-            return 0
+        age = re.findall(r'age(\d{1,2})', rating)
 
-    def _parse_schedule_item(self, item, date):
+        if len(age) == 0:
+            return 0
+        else:
+            return age[0]
+
+    def _parse_schedule_item(self, item, schedule_date):
         """Return CJ E&M channel schedule from table row."""
 
         schedule = dict()
@@ -92,44 +109,36 @@ class CJScheduleParser(MovieScheduleParser):
 
         # Get start_time and end_time
         duration = item.find('td', class_='runningTime').text
-        start_time = datetime.datetime.strptime(item.find('em').text.strip(), "%H:%M")
-        start_datetime = date.replace(hour=start_time.hour, minute=start_time.minute)
+        start_time = datetime.strptime(item.find('em').text.strip(), "%H:%M")
+        start_datetime = schedule_date.replace(hour=start_time.hour, minute=start_time.minute)
         schedule['start_time'] = start_datetime
         schedule['end_time'] = \
-            start_datetime + datetime.timedelta(minutes=MovieScheduleParser._parse_string_to_int(duration, 0))
+            start_datetime + timedelta(minutes=MovieScheduleParser._parse_string_to_int(duration, 0))
 
         return schedule
 
-    @staticmethod
-    def _convert_to_datetime_str(schedule):
-        """ Convert datetime information to ISO 8601 format. """
-        schedule['start_time'] = schedule['start_time'].isoformat()
-        schedule['end_time'] = schedule['end_time'].isoformat()
-
-    def _parse_daily_schedule(self, table, date):
+    def _parse_daily_schedule(self, table, schedule_date):
         """Get daily schedule for CJ E&M channels."""
 
         schedule_list = []
 
         last_hour = 0  # Hour of last schedule
         for item in table:
-            schedule = self._parse_schedule_item(item, date)
+            schedule = self._parse_schedule_item(item, schedule_date)
 
             if schedule['start_time'].hour < last_hour and last_hour >= 22:
                 # Move to next day's schedule.
-                schedule['start_time'] = schedule['start_time'] + datetime.timedelta(days=1)
-                schedule['end_time'] = schedule['end_time'] + datetime.timedelta(days=1)
+                schedule['start_time'] = (schedule['start_time'] + timedelta(days=1)).isoformat()
+                schedule['end_time'] = (schedule['end_time'] + timedelta(days=1)).isoformat()
 
                 # Move to next day.
-                date = date + datetime.timedelta(days=1)
-            elif schedule['end_time'].day != date.day:
+                schedule_date = schedule_date + timedelta(days=1)
+            elif schedule['end_time'].day != schedule_date.day:
                 # Set next day because next schedule is for next day.
-                date = date + datetime.timedelta(days=1)
+                schedule_date = schedule_date + timedelta(days=1)
 
             # Save hour field of last schedule.
             last_hour = schedule['end_time'].hour
-
-            self._convert_to_datetime_str(schedule)
 
             schedule_list.append(schedule)
 
@@ -147,9 +156,9 @@ class CJScheduleParser(MovieScheduleParser):
         if self.url.find('startDate') != -1 and "".join(date_split) != self.url[-8:]:
             return None
 
-        schedule_date = datetime.datetime(int(date_split[0]), int(date_split[1]), int(date_split[2]))
+        schedule_date = datetime(int(date_split[0]), int(date_split[1]), int(date_split[2]))
         # Set to Korea Standard Time (KST)
-        schedule_date = schedule_date.astimezone(datetime.timezone(datetime.timedelta(hours=9)))
+        schedule_date = schedule_date.astimezone(timezone(timedelta(hours=9)))
         schedule_table = schedule.find('tbody').find_all('tr')
 
         if len(schedule_table) == 0:
@@ -157,6 +166,81 @@ class CJScheduleParser(MovieScheduleParser):
             return None
 
         return self._parse_daily_schedule(schedule_table, schedule_date)
+
+
+class CatchOnScheduleParser(MovieScheduleParser):
+    """ Parser for movie schedule from Catch On Channels. """
+
+    @staticmethod
+    def _parse_date(date_txt: str):
+        """ Parse date to parse movie schedule. """
+
+        today = date.today()
+        parsed_date = datetime.strptime(date_txt, '%m.%d')
+
+        return parsed_date.replace(year=today.year).date()
+
+    def _parse_schedule_item(self, item, schedule_date):
+
+        schedule = dict()
+
+        start_time_str = item.find('span', class_='time').text
+
+        if start_time_str.startswith('\nNOW'):
+            start_time_str = start_time_str[4:]
+
+        start_time = datetime.strptime(start_time_str.strip(), '%H:%M').time()
+        start_time_dt = datetime.combine(schedule_date, start_time).astimezone(timezone(timedelta(hours=9)))
+
+        duration = self._parse_string_to_int(item.find('span', class_='runningTime').text[:-1])
+
+        schedule['start_time'] = start_time_dt.isoformat()
+        schedule['end_time'] = (start_time_dt + timedelta(minutes=duration)).isoformat()
+
+        schedule['title'] = item.find('span', class_='title').find('strong').text
+
+        schedule['rating'] = self._get_rating(item)
+
+        return schedule
+
+    def _parse_daily_schedule(self, table, schedule_date):
+        schedule_list = []
+
+        for row in table:
+            item = row.find('div', class_='items')
+            result = self._parse_schedule_item(item, schedule_date)
+            schedule_list.append(result)
+
+        return schedule_list
+
+    def get_channel_schedule(self):
+        """ Get Catch On channel schedule until no schedule exists. And return last update date. """
+
+        driver = self.execute_chromium()
+        driver.get(self.url)
+
+        # Get current week of start_date
+        source = BeautifulSoup(driver.page_source, 'html.parser')
+        schedule_table = source.find('ul', class_='schedule').find_all('li')
+        table_date = self._parse_date(source.find('span', class_='date').text)
+
+        schedules = self._parse_daily_schedule(schedule_table, table_date)
+
+        driver.close()
+
+        return schedules
+
+    def _get_rating(self, rating):
+
+        if rating.find('span', class_='tag adult') is not None:
+            return 19
+
+        rating_span = rating.find('span', class_='gradeType')
+
+        if rating_span is not None:
+            return self._parse_string_to_int(rating_span.text.strip()[1:-1])
+        else:
+            return 0
 
 
 class TCastScheduleParser(MovieScheduleParser):
@@ -167,14 +251,14 @@ class TCastScheduleParser(MovieScheduleParser):
         super().__init__(url)
         self.start_hour = self._get_tcast_start_hour(url)
         if start_date is None:
-            self.start_date = datetime.datetime.today()
+            self.start_date = datetime.today()
         else:
             self.start_date = start_date
 
         # Remove time information
         self.start_date = self.start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         # Set to Korea Standard Time (KST)
-        self.start_date = self.start_date.astimezone(datetime.timezone(datetime.timedelta(hours=9)))
+        self.start_date = self.start_date.astimezone(timezone(timedelta(hours=9)))
 
     @staticmethod
     def _get_tcast_start_hour(url):
@@ -186,12 +270,12 @@ class TCastScheduleParser(MovieScheduleParser):
             return 5
 
     @staticmethod
-    def _check_tcast_date_range(date, date_range):
+    def _check_tcast_date_range(schedule_date, date_range):
         """Extract date range from table and check if date is in that range."""
 
         found = False
         for i in date_range[1:]:
-            if str(i.find_all(text=True)[-1]) == datetime.datetime.strftime(date, "%Y.%m.%d"):
+            if str(i.find_all(text=True)[-1]) == datetime.strftime(schedule_date, "%Y.%m.%d"):
                 found = True
                 break
 
@@ -219,19 +303,19 @@ class TCastScheduleParser(MovieScheduleParser):
         else:
             return age[0]
 
-    def _parse_schedule_item(self, item, date):
+    def _parse_schedule_item(self, item, schedule_date):
         """
         Make single schedule for t.cast channel. Return single schedule dictionary.
 
         :param item: <div class="con active">
-        :param date: <strong>05:30</strong>
+        :param schedule_date: <strong>05:30</strong>
         :return schedule of movie
         """
 
         schedule = dict()
 
-        start_time = datetime.datetime.strptime(item.find('strong').text.strip(), "%H:%M")
-        start_datetime = date.replace(hour=start_time.hour, minute=start_time.minute)
+        start_time = datetime.strptime(item.find('strong').text.strip(), "%H:%M")
+        start_datetime = schedule_date.replace(hour=start_time.hour, minute=start_time.minute)
         schedule['start_time'] = start_datetime.isoformat()
 
         schedule['title'] = item.find('a').text.strip()
@@ -244,10 +328,10 @@ class TCastScheduleParser(MovieScheduleParser):
 
         return schedule
 
-    def _parse_daily_schedule(self, table, date):
+    def _parse_daily_schedule(self, table, schedule_date):
         """Get daily schedule for t.cast channel."""
 
-        date_format = datetime.datetime.strftime(date, "%Y%m%d")
+        date_format = datetime.strftime(schedule_date, "%Y%m%d")
         daily_schedule = []
 
         # Get schedule
@@ -261,35 +345,28 @@ class TCastScheduleParser(MovieScheduleParser):
             schedules = cell.find_all('div', class_='con active')
             for schedule in schedules:
                 if hour in range(self.start_hour):
-                    daily_schedule.append(self._parse_schedule_item(schedule, date + datetime.timedelta(days=1)))
+                    daily_schedule.append(self._parse_schedule_item(schedule, schedule_date + timedelta(days=1)))
                 else:
-                    daily_schedule.append(self._parse_schedule_item(schedule, date))
+                    daily_schedule.append(self._parse_schedule_item(schedule, schedule_date))
 
         # Add to list
         return daily_schedule
 
-    def _parse_schedule_from_table(self, source, date):
+    def _parse_schedule_from_table(self, source, schedule_date):
         """
         Find schedule table and parse daily schedule from the table.
         Finally, return schedule list
         """
 
         schedule_table = BeautifulSoup(source, 'html.parser').find('tbody')
-        temp_schedules = self._parse_daily_schedule(schedule_table, date)
+        temp_schedules = self._parse_daily_schedule(schedule_table, schedule_date)
 
         return temp_schedules
 
     def get_channel_schedule(self):
         """Get t.cast channel schedule until no schedule exists. And return last update date. """
 
-        options = webdriver.ChromeOptions()
-        options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu')
-        driver = webdriver.Chrome(os.path.join(os.path.dirname(__file__), 'chromedriver'), options=options,
-                                  service_log_path='/tmp/chromium.log')
+        driver = self.execute_chromium()
         driver.get(self.url)
 
         # Get current week of start_date
@@ -304,9 +381,9 @@ class TCastScheduleParser(MovieScheduleParser):
         temp_schedules = self._parse_schedule_from_table(driver.page_source, self.start_date)
         while len(temp_schedules) != 0:
             if temp_schedules is not None:
-                schedules.append(temp_schedules)
+                schedules += temp_schedules
 
-            end_date = end_date + datetime.timedelta(days=1)
+            end_date = end_date + timedelta(days=1)
             temp_schedules = self._parse_schedule_from_table(driver.page_source, end_date)
 
             if temp_schedules is None:
@@ -314,8 +391,5 @@ class TCastScheduleParser(MovieScheduleParser):
                 temp_schedules = self._parse_schedule_from_table(driver.page_source, end_date)
 
         driver.close()
-
-        if os.path.exists('/tmp/chromium.log'):
-            os.remove('/tmp/chromium.log')
 
         return end_date, schedules
