@@ -35,8 +35,6 @@ class MovieScheduleParser(object):
 
     @staticmethod
     def _parse_string_to_int(string_to_parse, default=0):
-        """Try to parse string to int, or return default value."""
-
         try:
             return int(string_to_parse)
         except ValueError:
@@ -44,8 +42,6 @@ class MovieScheduleParser(object):
 
     @staticmethod
     def execute_chromium():
-        """ Execute Chromium in headless mode """
-
         options = webdriver.ChromeOptions()
         options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
         options.add_argument('--headless')
@@ -59,7 +55,6 @@ class MovieScheduleParser(object):
 
     @staticmethod
     def clean_chromium_log():
-
         if os.path.exists('/tmp/chromium.log'):
             os.remove('/tmp/chromium.log')
 
@@ -235,8 +230,8 @@ class CatchOnScheduleParser(MovieScheduleParser):
 
         if rating_span is not None:
             return self._parse_string_to_int(rating_span.text.strip()[1:-1])
-        else:
-            return 0
+
+        return 0
 
 
 class TCastScheduleParser(MovieScheduleParser):
@@ -252,9 +247,8 @@ class TCastScheduleParser(MovieScheduleParser):
             self.start_date = start_date
 
         # Remove time information
-        self.start_date = self.start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        # Set to Korea Standard Time (KST)
-        self.start_date = self.start_date.astimezone(timezone(timedelta(hours=9)))
+        self.start_date = self.start_date.replace(hour=0, minute=0, second=0, microsecond=0)\
+            .astimezone(timezone(timedelta(hours=9)))
 
     @staticmethod
     def _get_tcast_start_hour(url):
