@@ -44,8 +44,8 @@ class TestCJMovieParser(unittest.TestCase):
 
         self.assertNotEqual(schedules, None)
 
-    def test_parse_cj_super_action(self):
-        url = 'http://superaction.tving.com/superaction/schedule'
+    def test_parse_cj_ocn_thrills(self):
+        url = 'http://ocnthrills.tving.com/ocnthrills/schedule'
         cj_parser = parser.CJScheduleParser(url)
         schedules = cj_parser.get_channel_schedule()
 
@@ -55,8 +55,8 @@ class TestCJMovieParser(unittest.TestCase):
             check_required_field_in_schedule(schedule)
             print(schedule)
 
-    def test_parse_cj_ch_cgv(self):
-        url = 'http://chcgv.tving.com/chcgv/schedule'
+    def test_parse_cj_ocn_movies(self):
+        url = 'http://ocnmovies.tving.com/ocnmovies/schedule'
         cj_parser = parser.CJScheduleParser(url)
         schedules = cj_parser.get_channel_schedule()
 
