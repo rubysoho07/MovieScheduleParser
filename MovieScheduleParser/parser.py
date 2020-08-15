@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 """
     Movie Schedule Parser.
     2017~2019 Yungon Park
 """
 import os
 import re
+import platform
 from datetime import datetime, timezone, timedelta, date
 
 import requests
@@ -21,6 +21,14 @@ class MovieScheduleParser(object):
 
     def __init__(self, url):
         self.url = url
+
+    @staticmethod
+    def _get_log_path():
+        """ Get log file path by operating system. """
+        if platform.system() == 'Windows':
+            return './chromium.log'
+        else:
+            return '/tmp/chromium.log'
 
     @staticmethod
     def _get_original_data(url):
@@ -43,20 +51,21 @@ class MovieScheduleParser(object):
     @staticmethod
     def execute_chromium():
         options = webdriver.ChromeOptions()
-        options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
+        if os.path.exists(os.path.join(os.path.dirname(__file__), 'headless-chromium')):
+            options.binary_location = os.path.join(os.path.dirname(__file__), 'headless-chromium')
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
         driver = webdriver.Chrome(os.path.join(os.path.dirname(__file__), 'chromedriver'), options=options,
-                                  service_log_path='/tmp/chromium.log')
+                                  service_log_path=MovieScheduleParser._get_log_path())
 
         return driver
 
     @staticmethod
     def clean_chromium_log():
-        if os.path.exists('/tmp/chromium.log'):
-            os.remove('/tmp/chromium.log')
+        if os.path.exists(MovieScheduleParser._get_log_path()):
+            os.remove(MovieScheduleParser._get_log_path())
 
     def _get_rating(self, rating):
         raise NotImplementedError
@@ -107,8 +116,7 @@ class CJScheduleParser(MovieScheduleParser):
         start_time = datetime.strptime(item.find('em').text.strip(), "%H:%M")
         start_datetime = schedule_date.replace(hour=start_time.hour, minute=start_time.minute)
         schedule['start_time'] = start_datetime
-        schedule['end_time'] = \
-            start_datetime + timedelta(minutes=MovieScheduleParser._parse_string_to_int(duration, 0))
+        schedule['end_time'] = start_datetime + timedelta(minutes=MovieScheduleParser._parse_string_to_int(duration))
 
         return schedule
 
@@ -123,8 +131,8 @@ class CJScheduleParser(MovieScheduleParser):
 
             if schedule['start_time'].hour < last_hour and last_hour >= 22:
                 # Move to next day's schedule.
-                schedule['start_time'] = (schedule['start_time'] + timedelta(days=1)).isoformat()
-                schedule['end_time'] = (schedule['end_time'] + timedelta(days=1)).isoformat()
+                schedule['start_time'] = schedule['start_time'] + timedelta(days=1)
+                schedule['end_time'] = schedule['end_time'] + timedelta(days=1)
 
                 # Move to next day.
                 schedule_date = schedule_date + timedelta(days=1)
@@ -134,6 +142,10 @@ class CJScheduleParser(MovieScheduleParser):
 
             # Save hour field of last schedule.
             last_hour = schedule['end_time'].hour
+
+            # Store date and time format in str type.
+            schedule['start_time'] = schedule['start_time'].isoformat()
+            schedule['end_time'] = schedule['end_time'].isoformat()
 
             schedule_list.append(schedule)
 
@@ -247,7 +259,7 @@ class TCastScheduleParser(MovieScheduleParser):
             self.start_date = start_date
 
         # Remove time information
-        self.start_date = self.start_date.replace(hour=0, minute=0, second=0, microsecond=0)\
+        self.start_date = self.start_date.replace(hour=0, minute=0, second=0, microsecond=0) \
             .astimezone(timezone(timedelta(hours=9)))
 
     @staticmethod
