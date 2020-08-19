@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='MovieScheduleParser',
-    version='0.0.3',
+    version='0.0.4',
     url='https://github.com/rubysoho07/MovieScheduleParser',
     author='Yungon Park',
     author_email='hahafree12@gmail.com',
