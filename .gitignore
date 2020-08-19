@@ -12,3 +12,9 @@ MovieScheduleParser.egg-info/
 
 # Unnecessary log files
 *.log
+
+# Terraform files
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.tfstate.lock.info
