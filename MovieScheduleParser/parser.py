@@ -57,6 +57,8 @@ class MovieScheduleParser(object):
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--single-process')
         driver = webdriver.Chrome(os.path.join(os.path.dirname(__file__), 'chromedriver'), options=options,
                                   service_log_path=MovieScheduleParser._get_log_path())
 
