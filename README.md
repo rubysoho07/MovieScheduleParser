@@ -13,6 +13,15 @@
 
 기본적으로는 AWS Lambda 환경에서 돌아가는 것을 목표로 하되, 차차 다른 환경에서도 사용할 수 있도록 수정할 예정입니다.
 
+## 지원하는 채널
+
+* OCN
+* OCN Thrills (구. Super Action)
+* OCN Movies (구. Ch. CGV)
+* Catch On 1, 2
+* Screen
+* CineF
+
 ## 동작 결과에 대한 설명
 
 이 라이브러리를 이용하는 경우, 아래 dict 형식의 리스트를 반환합니다.
