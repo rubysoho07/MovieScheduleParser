@@ -93,7 +93,7 @@ class CJScheduleParser(MovieScheduleParser):
         if len(age) == 0:
             return 0
         else:
-            return age[0]
+            return self._parse_string_to_int(age[0])
 
     def _parse_schedule_item(self, item, schedule_date):
         """Return CJ E&M channel schedule from table row."""
@@ -305,7 +305,7 @@ class TCastScheduleParser(MovieScheduleParser):
         if len(age) == 0:
             return 0
         else:
-            return age[0]
+            return self._parse_string_to_int(age[0])
 
     def _parse_schedule_item(self, item, schedule_date):
         """
